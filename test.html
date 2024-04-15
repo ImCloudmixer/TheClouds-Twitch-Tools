@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Run Python</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        function runPython() {
+            $.ajax({
+                url: "https://github.com/ImCloudmixer/TheClouds-Twitch-Tools/blob/28ce4641adc296fb06af60071680e893cf1fd048/Python%20GUI%20tkinter%20font%20checker.py/run-script",
+                type: "get",
+                success: function(response) {
+                    alert("Python says: " + response.result);
+                },
+                error: function(xhr) {
+                    alert("An error occurred: " + xhr.status + " " + xhr.statusText);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Python and HTML Integration</h1>
+    <button onclick="runPython()">Run Python Script</button>
+</body>
+</html>
