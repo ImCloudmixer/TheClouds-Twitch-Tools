@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Twitch IRC Bot</title>
+    <style>
+        body { 
+            font-family: Comic Sans MS, sans-serif; 
+            background-color: #333; 
+            color: #000; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding-top: 20px; 
+            height: 100vh;
+            margin: 0;
+        }
+        .login-panel {
+            position: absolute;
+            top: 390px; /* Adjust this to move the panel up or down */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.0); /* Transparent background */
+            padding: 0px;
+            border-radius: 10px;
+            z-index: 10; /* Make sure the login panel is above the image */
+        }
+        input, button { 
+            margin-top: 10px; 
+        
+        }
+        #feedback, #channelControls, #columnsContainer { 
+            display: none; 
+            color: #00FF00; 
+			padding-top: 20px;
+        }
+        #columnsContainer {
+            display: none;
+            flex-direction: row; 
+            justify-content: center;
+            width: 100%;
+	    }
+        .fixed-controls {
+            position: sticky;
+            top: 0;
+            background-color: #666;
+            padding: 5px;
+            z-index: 2;
+        }
+        .column { 
+            flex: 1;
+            margin: 5px;
+            max-width: 400px;
+            height: calc(100vh - 200px);
+            overflow-y: scroll; 
+            background-color: #666; 
+            padding: 5px;
+			position: relative; /* Needed for sticky positioning to work */
+		}	
+        .column-header {
+            padding: 5px;
+            background-color: #666;  /* Same as column background for consistency */
+        }
+        .channel, .username {
+            background-color: #777;
+            padding: 5px;
+            margin: 2px;
+        }
+        img.login-image {
+            width: 600px;
+            position: absolute;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 250, 200, 1.0);
+            padding: 10px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <img class="login-image" id="loginImage" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAGRFS1hLP2RYUVhxamR3lvqjloqKlv/b57X6////////////////////////////////////////////////////2wBDAWpxcZaDlv+jo///////////////////////////////////////////////////////////////////////////wAARCAKAAeADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwBKKSiqMhaKKXFACUU7FJQISjFLiigYlFFFABSiigUCHUhpaaaYCUUUUhhRSGigBaKcDQaBXEp26m0ooAcDTwaaBTqCkFAoxmikUFLmkpaAFpKKSkA7NGaSikMWiijFAwozRSUAFBpM0bqQXCikzRmgYhoBozSYppksfmjNIKQ0xC0lGabQAtJmikoHcN1FNJozSGOzQDimg04CgY/NOzTMYpc0gHZozTc0ZpXGOopKKYBRSUUDIKKeRmkxWhz3EpwptOFAMdSU6kpiEpDTgKCKAGUYpaKQC0UUpoZSQhpM0GkoEFFBpKACkpTSUDFHFOBptANAmPxThTAaeKYD6KQGlpFBmjNFFIAozRRQAZpabS0wuLRRRUjFooopDCkpaQmkA2kpTSUwEopcUlACGijNJmiwrjgaXNR07NMBaSkzRQAE4pDTqaaAsNJpM0GkFIY8VJTFHWnUDFooxiipYwpaQUtRcoKKM0ZqrgFFFFK4EYpaSlFdBzCGgUppMUAPoxSCnUDQU2nGkNACGkoNFAgFFFFJlIaaSlNJSHYWigUUyQpMUtGaAEoxRmjNABTgabmjNAyUGnCod1L5lAE1JUXm+1Ak5xigZKTTSwppyw4pm1iehoFceZBSCTnGKQRmm0AmiwOadTEPFPpFBRRRSADSUtFIYmKMUtHWgLCYoIp1IRSHYiNJinGkxVEtDcUYxTsUmKASExS0uKKTKFpppRRjNTcdiJqVRSsKEPWqRLH4oAooFAxaKSnZqWMSiikqBi0UlLQAUUGkoGNpwphFKDXScw6jFLmlxQOwlLRilxSGFIaWkNAMaabTiKTFMkAaCKaRilDYpMtMTpRilo6VJQgFLS0GmhMbjORSbSPWpFp1MzbsQ7W9DRsb0qainYXMyLyzR5Z9qloosLmZH5fvR5fvUlFAXZEyhR1php8h+aoyaTLRNH938afTIvufjT6aIluIehqA9Knb7pqA9KTKgSxGpqgiqakaC0UmaM0hAKWk6UUihaXFHSikMKKKKYDCKKUmkyKQ7BSbfeiigLBs96TbilozSbAZSg0pphFSA4jNRH5ffNSBqDzTTsDE3Uuc1EeKUVoSSZozRSUmhjs0lIKKzsMWlpMUtAwpwFJS0hjKTFLmiuk5hVNPqMU8UhodRSUtBQlJTqSgBKKdSUANNMxTiaaTTCwlLTc0vWkIcKUimA0/ORQMUEY6j86Mj1H51A3Bpu6i5PKWgR6j86KgibMgqemiZKwUxnwcU+oX+8aBJXJA6+tG9f7wqBjim7valcvlJXIJyDUZ60m40q8mkVaxPH9wU+mx/cFOqkZS3Gv901C3SpnGVNQ4pMqI9GCjmlMp7CkEZPtTxGPrRYbkhnmNSB2qXaPQUhQEccGiwucWNw1S1UBKtmrKnIqGjVai0UUx3xwOtIoczhRyahaUnpSbSxyaeEAq1EycyMsx70mT6mp+KKdiedkIdh71Irg0MgPtURBU+9JxLjMsUYpsbbhT6yZqM6UhFSUwipAjYUoOaDTQaoAzSUUgqkS9iSkozSVZCY4UAUoorJmgtLUJqUUmhjqWkFFSMjFGKcRSGuhGTQlOBpCvvTQaaYnEkzS7qZmkPFAWJc0UinNOoAaxpucU80lK5SQ3OaMUpNJSGMNJjFONNpgGaM0maSggG5puKdijFAXFiHz/AIVPUUX3z9KlpozkFQt94/WpqgPU02ERjUbaU9adipNLjAtPAwKUCg9KZNyVPuj6UtIv3R9KWmQ9wphYZ4pZDgVCTihscVck8wCgSgnpioM5oFTcvlLdFIvIH0paoyZFJ96nxNxTJPvURn5qmRtAndsCogMnJpSdz+wp1EUKcugVG784FPY4U1XY8VTIirj/ADMdKUSnvioRTgDU3NHFFgHIzTZBkZ9KIzxTm+6aoy6kcZw1T9qrA4NWEORWcjojsLTTTqYazZQw1GakNMpoBDQKSl6VaREhSaKAKcoqiR9JS0dayZoFLS0VIwop2KAKAG0mKXNJWiEHSkIzS0maoQm33pDT6OtFwI1bFSg5phX3p1O4rDqaafTSKkY2m07FIRTGIaaadSUANxRS4oxVGbEpaMUUEjo+pqSo4v4vwqSmiZBUFTHoagpMIid6fTB1qSgphSN0paRqAJhRRRTM2Ry9qhbqKlk61EfvUmawFVc07bgU9F4oYcVJY9fuj6UtA4FFWYPcik+9TUPzUr/eNNTvUs1gSx8jPqafTIvu/jT6pGUtxrjK1CRmrB4FICpoGnYhCnsKeI/WpKKLA5NiAACmSNQ7gdTULOW+lJscYsM5NWIulVl61ZjGBWbN0PJpppSaYTUjGMaaadRiqSBuwgGKTrSmgVZk2LTlpAM0+lJjigooFKKixYoFKKQc06lYYUtApaaQiKilNJihAwoooqhCGgU7FKFoGIVzQF96fRSuAClNGaTNADSKZUpGaYRTAYaSn7aNtNCZHRUpWozVEMTNIaKSgkfF0P1qSmRfdP1p9NEy3Eb7pqCpn+6ahNJjiIOtPpg60+gpi0hHIpaP4h9aQIloooqjIik+9Uf8dPf7xpq/eqWbQJk6USDinKOKa/UD3qSh1FFFaHOyBvvGiMc0N3pYutRI3iOiOMipKif5X3DvUgORVJmc0I/3TUOSORVionTHTpTYosj81/WkLserGnFRSbRU6mt0MpcU8D0pSCByKLBzBGtTjgVChwamzUtFoSmmnYpMUrDG4pDT6biqRL1G0oWlAp3SqMmxwGKCKbmkzSsNSHYpKbmlFJlp3HinCkAxS5qChaKKMUANpKKWkhiGkp1IKoQ4UtIKUUAFGKKMUAFFGabmi4Ds0lNJpu6lcBxoU0gOaKpCY+oyKkoqyCIrTCKnqNulAgi+5+NPpsf3RQWA70yHqwf7pqE05pAKjL56Umyopir1p1NWnUimFKpy4+tGKF4cUAibtRTGcAdajab0FVczUWxzjnNRp96mly3U0+PrUSZtFWJx0pD94fWnDpTW4YE1mnqU9h3aio2lUf8A1qjMxPQYra5zqDYrjBNLFURYt1NTRCpZtFWHuMio1YocHpUzConWkmNq5ICCKWq2Spp4m9RV3MnAlKg9RSbF9Kb5ye/5UhmXsDRdE8siTAHQU1+RURlY9ABTCxPU5ouWoPqPB5qdelVl61OvSpNEOooooSGJR1p2KQ1SIbEpKWkNMzEpM0Gm0hgTmpRxUYpc1DNESZpRzTAaWpKHilplLSGLRSUCkhi0UUoqhBS0ClNMQlITQTTCc0hMCaTHvTS3tTc1ViLj6M0zNJmiwXY404GmA0UILkwNLmo1PWn5qxCZprUoppNAiMsy8A1GWJ71IwqPFItCUoFLilAoHcctLSUUEC5oaig0DREaMU/bShalssYFqaNaAtSLUNlIeKY4yKcKRuaSAqsOaTFTFcmgR1oIjVSasRrihVqRRSAQimMKlprChAQFc1GVxVkrTStMRWxSVOVpuygCLFKBUm2lC0wEVamApo4pwNNIG7C4pcYoC0uKZIlIadTTQJjaQilopkDKbT6bjNIaEFLRS0rFXDFLSUtS0UmLmnA02lqShaUU2lqBjqUUgNLVoBRQeKBTW7UxDSaaeaAM0HmmiGNoxTqNtUQNxSYp+z3pNnvTAZilpSMUlIYoNOJplOpiYtNNLRQIYabinmkoKuJijFOooC4lFFFABS0lOFJjQAUuKKWs2WgApaQUtSMeKCKaKkFMYwLTttKKKYhMUtKKKYBiiiimITFIRTqSkMYRTSKkNNNNARkUooNJmmAp4pyc5qMmnRnrVEslozSE03NFibjt1NphNJQIeaDTSaM0xCUlLQKQCgUYp1LihspK4zFFO2+9GMVI0hMUoFFKKksYKcDUecU4c1Ax+aeKjpymmgHigiig0xDMU0CpDTRTRLQ4DFFI3vSb19RQA6mmkLj1FN35qkSwphFOzQeaokZTqTFAoAdSUUmRQAtJRnnpTgKNw2EpKdSUAJSUtFACUopKKQx1OFNFOWpaLQ/GKSlpamxQdKUUlLQMUUUUUCFFFJmlzTABRRmimIKSlxRSGNNNqTFNIpgR000803pTAZSqcUhFJmmJk2c000wUtMzYlFFNoAdmjNNpQKAFpRRS0CHA06mUUWGmPxTTQDTqTRSY3FKKSnYpMpDMU3GKWjrWRQ4c0tMHFPoEPBzS0wGldtvA61QAzBepqIszdOBTgmTk9aeBipcgIvLJ6ml8oVJRU3YEflCkMXpUtFF2BXIZaUNUzDIqHoTWkZkuNxTSqm4ZpvSpo/uCqm9CYrUj8s0vlipKD0rG7NCvjBp2c0nc0oHArWJMthKKKK0MwooxRigApKWigBVpwpgpwpMtElLTacKgtC0tJS0gCikpDQAUZpKTNMY7dTs1FTgaZI/dQDSUUCuLmikBzQDQNMCKaV96eabQO5ERimkVKeajxVCYylBoIpwQ4z2pNpE2uIKDS+WTS+XxU86DlGCnYpAOacBVp3E1YAKdiilqibCYpKdRigLAKDzS9KUCk2UkJ0opcUlQWR0UlFQMWlBpM0UgHk4oVe560ijJzT6TYBRRTXbAqRikgUnmAVGTmkzVWETeavoacrK3eqpYCjeKqwFojiq5+8aekuPcU1yC3FK1gD+Gpk+4PpUP8FTjhRVSeiJS1YlI33aWmyfdrJFkNSY4FMHap63iRIiIpMVIaY1WQwzSUmaUKSKlySBREopSjCmncKFJD5WKKcKYDTxQCHU4U2lqWaIeKKSipuMU03NBYdyKZuHagQpNNoNOCZ71QCUoGaXZ70nSmgFAxTqaKAQehzTJYtKKSnAUmCQGm0rUlCAKYadTTTBjDU6j5BUHerA4UVExrYSkbpS01/u1kURA807rTOpqZBXRHYhrqKBilpaWqENxS0ZoNILCYzS0UlJlBSZzQTikxSGR4pKM0tQAUUULy4FAEwGBRSmkrNjCoWOWqVulQ9zVREBppyacBk1IB7VaAg200rVnbTSlUIgHBqRckUFKcoxTtcVwHYe9Tmov4xUpqJjQlMl6U+o5azW4xq/eFTVFH96pCcCto7EvcazY4700IW609V7nrTqzlO40hoQCnAU1mxSeZ7VOrGSYpCAaaso7ipOCMinygQtGD0qPJQ4PSrFMdcihSsFhAadUaHsad0rXcQ4gnpTCjHqakTnJpayegyLy6ao+bFTnpUAPzU07gPqWoxSseKsBC7dgMU35z3qbHFJUOTAhZTjnmnxD5SaJPu0sRwtNMLDwMUZoqNmLcD86YWFZgvA5NMy7e1OVAKfipcgsRbG9TTSGHc1PS4zSUmFiuDk1Y7VGY+c08dKG7gFMk+7T6jlpLcCNetWFqGMVKWCjJroWiIeo7OKYZVHTJ+lNIZ+vT0pwQCs3MpIb5p/u/rQJR3BFP2j0oKA9qXOOwoIYZBzS1AAVkGPWp8VV7gNoxTsUmKYFelBpopRSsId1oT/WrSYpoOJFPvRYC0aSnGm1k9xiN0qAd6sHpVfo1OID0FPxTY+hp9arYlhTsU2nA0xCFaNtOpD0piI1H7ypDTE5c081lPctCVFJ96pahblqiIx0XU0/qfpTI+AalHStH8IuolBOBRTZD8tZFEROTTGfFOPSmbK2SJbDzD6VPBJk49agK0R8SL9abQXLhpKcabWL3GQNw9OJpJPvU09K2jsTLRk0X3M06kjGIx9KWspblCP92oO9TSH5aiXrTgDHikJywFO6CmrzIKtgTGkpTSVixkcvSkQ0Snmmoa0itBEh4HHU05VwKSMZJNOqZMApGbFLUEjd6SVwHeYe1KJSPSq+4+tOVuxrTlsBbUh1yKSmQn5jUhqJAJUUvWpahk+9SjuAqHAzTlG47jTD0AqWP7lazfQSFprtinVFKOc1ktxiiUjtT1lB4IxVYN604GrtYCVx84I9alzVcHPGanB4poBaQmkPNIaYrkW33pQKSilcYuaiepKjemhFqNt8YNFQW0m1tp6GrJFRJDG1FKvcVLQRkVKdhkKHmn5pjRkHIpMt6VqmiWiXNKDUWW9KU7yPSndCsS7hnGRmms3FQrxT85WhO4WHxc5NPpkX3Pxp1ZT3KQHpUB+8ambpUPrREB44SpR9wfSoCcLUsJ3Rj2rSS0EhaZL92n01xlaxW5REBmpFWmR/exU4FdEdiGRunFQqv71frVg9KjQfOTRJ2QImNJRSE4Fc5ZE/3qRhxQTk0vUgVtHYhk4+6KSlNJWTKI5elMXrTpetNQVpATH9qI/9ZQelEPU05bASmkpTSViUQydaVRhSaa33qceFraOwiSMfIKWhPuCispAI3Sqz8mrL/dqADJqoAxoXNKUqVVoYfKa2JFhHJqQ0yIfKadWEigqE8vUx6VCvL04bgxX6ipITwRTJBwDTVYg5FU9wJyKaRkU5WDj3oIxUNWArvHimDIq0Rmonj7impdwGIOanHSoouTjvUo4qxAeKbQTimmgBtLSClqRhTHFPpCKaAhPWrUEwcbW+9/OqzCm1QjQIptQR3BHD8+9WAyt0NZuIxKMCnYpMVNmAmBSHpTqaxHTNAyHuacPu0096XPyVrHclkyDCCilAwopCQOprOW4xH+7UFSuwIxUfenEBz9KSB9r7T0NDnioT1rWxKLxFNpkMwYYbrUpFZSiUQOhByKcs2B8w59qkxTdo9KFJoLDWk3cKKVFwKUKBS0nJsAqORu1OZsVExoSAB1py/fWmoM80E4cfWtrWRPUsGkpx5GabWD3KIpR3pE6VKRkUzyuaqMrAIxHQc06MYHvQsYFSYxQ3cBKD0opG6VAyA/epx6U3vTm6VsthEsRymKdUULYbHrUzCokgGN0qFeHxU9ROhzkUouwDxTXPFJub0oCFjk1o5KwD4/u06gDFFYsYjdKiT71SSfdqNOtaQEyRuRUJ4NSM+OBTGUgZ65qm0AA46VMkm7hutVhkfSng80tgLBGKSlzkUlZMZD92QH3qQmo2Pz07NarYQU3NHWjGapCFptKaSkkMWlptKKGAjLmoitTmmlc0JiIKUMR0pxWm4qgJBKfel83/AGjUWKTFLlQXJjJnq1JvHrUeKAKOULkgOaVuBSKKGp2sTe48TEjFNLepqKjFTylXHlx2pynNRgVIBVJIlscTkdKjcVKKHFVYlMrgkHipo5iOM1Gy02paNC2JgeopfMWqYYjvS7zUcoy0ZFppkJ6VBvNJknvRyhckZvzpvLGkC1Kq1SVhXBRxTH4qfHFQyCmBLFLxg9KlyD0NUQSppwkFQ0Mt4prMBVfzB6mmmT0qeUCZpPTipgcIMmqQOSM04yfjVctgLJdRTGkz2quXNJknqaOQLkoOWJp7DimJUh6VQEanmrCOGGD1qqwwc0qv+BpNAWiKMVEJSOvNKZvas2gH8CkDDOKheXNIjdCaaj3AtEU2mNMMVG03v+VHLdgSydKYnWot5apU6VcVYBH++amC5QfSoW+8akSUAYNSwEMYoEYFSblPcUm5fUVOoBSMcCmtKoFQPIW6cChRbAduy1PU1HGuamXgVoAEUdKUUw1aREmFNNOPFNNKw7iUoptLmkMdRTc0uaEhi4pCtGadTEM2UmypaTFADNtKFp2KWgVhoFIRT6SgdiPbRtp+KKZLG4paKKZAtLSCigQpTNRsmKmBpDQVcr7aMVKVpMUrD5hgWnBadilFFg5hVGKeKbnFLuoC46mOM0ZpDQO5Cy03FTEU3bRYLkeKULT9tKBQFyMikxUuKTbSHcZilC08LTgtOw7iKKfSUtFhXGMuaiIxVgiomXNFhXI8n1pMk96cVpQtKw7jcUuSBjNSBKQpQMj60YqTZTgtAEarU6jikC04UhjHqPeR2qZlqIpQAm/2pC5o20baLIBvWnAU4JUipQIEWnilxR0oQmxGNRmnGm1ZmFIaWkoBDTSZpWptJmqY4UtNFLSGOFLTRThQAtLik60uMUAGKKM0UAFFFFACUUUUxNCYpKdmighobRS4pKYrBS5pKMUCDNLSYooHYWiiigLC0UUlArBRS4p4WgdiPFGKk20baAI8UuKdigCgYm2l20+jFADMUbafiloAYFoxTiaYTQAhphpxpMUxDcU4ClxR+FIaFxS4pAKdUstCYpcU4CiouMbtpQKdilp3Abik2U6igBhWkCVJilxQAwJTgKdTetAhKQ04mmGrRnJjDSUtJVCEz7UuacaTGam5pyjSKjxipCuKaRmgErDRTjTafSKEpw5plSYoAdRmg0maACgUoFSbfekAwCnYp+MUUAM203bUlNNADNtIRin02mA3NFLilqiWhuKeBRingUE2GYpu2pKSgQzbRin0lIY3FKBS0oFAAop+KQUtAwooopgJijFOxRSuFgxRRRQAGmk0E0maYBikxQTRii4mNpQKWjFFxCgUuaTFAqWNC9aKdS1JoMpaXNFKwBRRRTAKKU000ALmjNM3e1Jup2ESU0tTc0VSRLYE5pKXFJVEMaaKCcUmKAH0mKKMVmbCGmdakxSEUDI6UClK+9IKADFSqKYakWgBppBTyKQUrgOTvT6jXin0CFopDQKAA0hpabRcYhpKWimhABS0opDVXEAFOpop1MkSkpaKQCUmKdijFADcU4ClxRQAUtFFABSU6igYlFLSUAIaKXpQaVx2GkUmKXFFFwEopcUUrkiU3NLSUwFDU/FR05T1pMaHmlpuaWkUFFFFAC0maRqYTtpASZpp5pppu6gB1GM1H5ntQXzVICWioRT93tVohjqaaQtTSaZAvSim5pM0FKLZNRRiisWahRRRSuwG0YpaSncAHFKpxSZopgSGkpoOKdmpYxadTaUU0wFpKWkoEFFFFIBKQU7FFUhMBRQKXFUISloxSZAHNMVhaMUwvn7ozRtZuppAPJA6kU3zF9zQEAp20elADPM/2TS+Z/smnYoxQA3zf9k0vmr3yKXFG0elAxQynoRS1GUB7Um1l+6aAJaKYJCPvD8qeCD0NABSUtFIBKDRmmnmgAJpppcUmKdiWxpNJmn0007E3G5pwNNoxik0UmTA0tRg+1PBqCxaXNJmkLUAIxpuaCaSgAprHFOpjdqaACM03b70maKoQucUu/Pam5ozRcGrjs5oxmm7sUA07gkh4XFOpuc04HNK4x9FJRmpAKKTrS4qRiYpMUtGKAG4oxTqKAEBpaQ0opgOBzRmkxmjNIB9LTAacKYC0UUUAFFLRTEJQKU4AyajOXOBwtMQrSc4Xk0gQnljmnqoHSnYpgNAxS4p2KKAExRinUUAJijFLRQAmKTFOooAbikxT6TFADCKYUwcqcGpcUhFADFkxw3HvT6aRnrTRlPcUASUhoBBGRRmgQlJinUHmi4WGYpDT9tNIp3FyjDQOKU0lArDs0u33qPFLnFJoadhd2O1G4+lLu9qM1NirjQKUmgmmE0DHVGTSk0maEAmKSlxmjFUAlJS0UAJThTgnvRt96Vx2FFOzTKXFICSjFNNOFAhcUtFJmmAUlOopANxTsUU4CgY3bTStS0mKAIqeOadiiiwBiilxRRYQUUtFMApCQBk0tR8yN/sigAwZDk8LTwMUoGKWmIMUUtFABRRRQAUUUUAFFFFABRRRQAUUUUAFJilooAaRTSKfSEUAQkFDkdO4qQEMMigio/uNkdD1oAkpKXqMiigQUUEUUhjCKQrT6TpTQmiPFGKkxSUySOinmmlaAGmm5p1IRSsUMNKKXFGKYwpKWkzUjCgUlOWgY4DNPxSLT8Vm2MZS4p4FJRcCOn9KRadnFaEC0UmaAaBjqSkpRQA4Cl60CloASilooATFLiiigAooopiCilprNtUmgBrksdg/GnqMDFNiGBk9TUlABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFJS0UANIppGRT6QigCEFk4xkUvmeqmpMUmKAGiRT3x9ad16UhUHtTdmOQcUAPpCKaHZfvDNPBDDg0ANxRTsUYpiaGEUhFSYppFAiPFIakxTcUAMpKeRSGgYzFJ0pxoxSKG0opStJSGPBxUgaoc04VDQyXNFMFPFTYQzpRmkzSVqRcdS00U4CgYoFOpBS0DHClpBS0CCiigkAZJxTAWkJA61GZCeEH40mwnljmgB5kUe/0pPM9FNAUDtTsUAN8w/3f1pDlyARgU/FKBQAopaSloAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKSlooATFJinUUANxSYp9JigBhFMKYOV4NSkUhFADVfJw3Bp1MZc0KxB2t+BoEPpKWimA003FPooER4pCKkpuKBkeKUUpFJSKFxTSKeDmlqNhkWKXFPxSgUrjHKtLiloosSV6lVOvNMAqZashIQp70m2n0UFDMUoFLSigYUUtMd8cDqaYhWcL7n0pm0sct+VOVMcnk07FACAYpcUuKKAExS4paKAExRS0UAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABSYpaKAGEUxlyKlpMUARfvAMZo/eeoqTFGKAI9zjqAaA47gin4pCKADg9KTFJswcqcUBucNx70ALimkU/FIRQMbinUYoNSwClFAFOxUjA0UUUxBigcUmaKoQ6kpKWgApaSlpgIzbRmkRf4j1NIPnk9hUlABS0UUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUlLRQAmKMUtFACYpMU6igBhFNIz1qTFNIoAjBKHB5X+VPpCM01TtbaenagB9JinUlJjFFFKKQ0gCiikNIBM0U3FOFWIWlpKWgVwoY4U+tFI3LKPxoGORdq4p1FFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABSGlooAYRTGXIqU0w0AIjZXnqKdUY+WT2NS0mMKQ0tIaQBSUtFIBnSlFJupM1pYzuPopuaWgB1IOZfoKKRP9afpQUiWiiikMKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAENNNPppoAik6Z9KlHIzTH+6aVD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" alt="Login Image">
+    <div class="login-panel" id="loginPanel">
+        <h1> Twitch IRC Bot <br><br>     <br> </h1>
+        <label for="nickname">Nickname:</label>
+        <input type="text" id="nickname">
+        <label for="oauth">OAuth Token:</label>
+        <input type="password" id="oauth">
+        <button onclick="login()">Login</button>
+        <button onclick="window.open('https://twitchapps.com/tmi/', '_blank')">Need One?</button>
+        <div id="feedback"></div>
+    </div>
+    <div id="channelControls">
+        <button id="loadChannels" onclick="loadPrebuiltChannelList()">Load Channels</button>
+        <input type="text" id="channelInput" placeholder="Enter channel names separated by commas" style="width: 300px;" onkeypress="handleKeyPress(event)">
+        <button onclick="joinChannels()">Join Channels</button>
+    </div>
+    <div id="columnsContainer">
+        <div id="channels" class="column">
+            <div class="column-header">
+                <label><input type="checkbox" id="masterChannelToggle" checked> All Channels</label>
+            </div>
+            <!-- Channels will be added here dynamically -->
+        </div>
+        <div id="usernames" class="column">
+            <div class="fixed-controls">
+                <button onclick="downloadUsernames()">Download Usernames</button>
+                <label><input type="checkbox" id="includeChannelNames" checked> Include channel names</label>
+            </div>
+            <!-- Usernames will be collected here -->
+        </div>
+
+    </div>
+
+<<script>
+    const server = 'wss://irc-ws.chat.twitch.tv:443';
+    let websocket;
+    let activeChannels = {};
+    let collectedUsernames = new Set();
+
+    function login() {
+        const nickname = document.getElementById('nickname').value;
+        const token = document.getElementById('oauth').value;
+        if (!nickname || !token) {
+            alert('You must enter your nickname and OAuth token to continue.');
+            return;
+        }
+
+        websocket = new WebSocket(server);
+        websocket.onopen = function () {
+            console.log("WebSocket connection established.");
+            websocket.send('PASS ' + token);
+            websocket.send('NICK ' + nickname);
+            websocket.send('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership');
+            document.getElementById('feedback').innerText = 'Logged in successfully.';
+            document.getElementById('loginImage').style.display = 'none';
+            document.getElementById('loginPanel').style.display = 'none';
+            document.getElementById('channelControls').style.display = 'block';
+            document.getElementById('columnsContainer').style.display = 'flex';
+        };
+
+        websocket.onerror = function (event) {
+            console.error('WebSocket error: ', event);
+            document.getElementById('feedback').innerText = 'WebSocket error. See console for details.';
+        };
+
+        websocket.onmessage = function (event) {
+            console.log("Received: ", event.data);
+            if (event.data.includes('PING')) {
+                websocket.send('PONG :tmi.twitch.tv');
+                console.log("PONG sent");
+            } else {
+                parseUsernames(event.data);
+            }
+        };
+    }
+
+    function joinChannels() {
+        const channelsInput = document.getElementById('channelInput').value.split(',');
+        channelsInput.forEach(channel => {
+            channel = channel.trim();
+            if (channel && !activeChannels.hasOwnProperty(channel)) {
+                activeChannels[channel] = true;
+                const channelDiv = document.createElement('div');
+                channelDiv.className = 'channel connected';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = true;
+                checkbox.onchange = function() { toggleChannel(channel, checkbox.checked); };
+                const label = document.createElement('label');
+                label.textContent = ' #' + channel;
+                channelDiv.appendChild(checkbox);
+                channelDiv.appendChild(label);
+                document.getElementById('channels').appendChild(channelDiv);
+                websocket.send('JOIN #' + channel);
+                console.log("JOIN command sent for: #" + channel);
+            }
+        });
+        document.getElementById('channelInput').value = '';
+    }
+
+    function toggleChannel(channel, isChecked) {
+        if (isChecked) {
+            websocket.send('JOIN #' + channel);
+            activeChannels[channel] = true;
+            document.querySelector(`.channel[label="${channel}"]`).className = 'channel connected';
+        } else {
+            websocket.send('PART #' + channel);
+            activeChannels[channel] = false;
+            document.querySelector(`.channel[label="${channel}"]`).className = 'channel disconnected';
+        }
+    }
+		
+    function toggleAllChannels(isChecked) {
+        const checkboxes = document.querySelectorAll('#channels .channel input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+            const channel = checkbox.parentNode.textContent.trim().replace('#', '');
+            toggleChannel(channel, isChecked);
+        });
+    }
+
+
+    document.getElementById('masterChannelToggle').addEventListener('change', function() {
+        toggleAllChannels(this.checked);
+    });
+	
+    function parseUsernames(data) {
+        const usernameRegex = /:(\w+)!\w+@\w+\.tmi.twitch.tv PRIVMSG #(\w+) :/g;
+        let match;
+        while (match = usernameRegex.exec(data)) {
+            const username = match[1];
+            const channel = match[2];
+            const displayText = '#' + channel + ': ' + username; // Always collect with channel name
+            if (!collectedUsernames.has(displayText)) {
+                collectedUsernames.add(displayText);
+                const usernameDiv = document.createElement('div');
+                usernameDiv.className = 'username';
+                usernameDiv.textContent = displayText;
+                document.getElementById('usernames').appendChild(usernameDiv);
+                autoScrollUsernames();
+                console.log("Username added: ", displayText);
+            }
+        }
+    }
+
+    function autoScrollUsernames() {
+        const container = document.getElementById('usernames');
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            joinChannels();
+        }
+    }
+</script>
+
+</body>
+</html>
