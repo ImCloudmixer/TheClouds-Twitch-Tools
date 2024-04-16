@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Channel Scraper</title>
+    <script>
+        function copyCodeToClipboard() {
+            const textArea = document.createElement('textarea');
+            textArea.textContent = document.getElementById('jsCode').textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            textArea.remove();
+        }
+    </script>
+</head>
+<body>
+    <h1>Twitch Channel Scraper</h1>
+    <p>Copy the JavaScript code below and run it in your browser's console on the Twitch page.</p>
+
+    <pre id="jsCode">
+function getTwitchChannelNames() {
+    const channels = document.querySelectorAll('[data-a-id^="card-"]');
+    const channelNamesSet = new Set();
+	
+    // Change array amount, make sure to scroll down page. 
+    Array.from(channels).slice(0, 600).forEach(el => {
+        const channelName = el.getAttribute('data-a-id').slice(5);
+        channelNamesSet.add(channelName);
+    });
+    const uniqueChannelNames = Array.from(channelNamesSet);
+    console.log(uniqueChannelNames.join(', '));
+    return uniqueChannelNames;
+}
+getTwitchChannelNames();
+    </pre>
+    <button onclick="copyCodeToClipboard()">Copy Code</button>
+    <button onclick="window.location.href='https://www.twitch.tv/directory/all?sort=VIEWER_COUNT';">Go to Twitch Directory</button>
+</body>
+</html>
