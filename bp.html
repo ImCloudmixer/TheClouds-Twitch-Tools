@@ -396,10 +396,78 @@
         }
         
         function saveBlueprint() {
-            const data = {
-                shapes: shapes,
-                scale: scale,
-                zoom: zoom,
-                offsetX: offsetX,
-                offsetY: offsetY,
-                gridSize
+            const blueprintData = {
+                metadata: {
+                    created: new Date().toISOString(),
+                    scale: scaleFactor,
+                    gridSize: gridSize,
+                    units: 'meters'
+                },
+                elements: blueprintElements,
+                catalog: objectCatalog
+            };
+            
+            const dataStr = JSON.stringify(blueprintData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportName = 'mall_blueprint_' + new Date().toISOString().slice(0, 10) + '.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportName);
+            linkElement.click();
+            
+            updateStatus(`Blueprint saved as ${exportName}`);
+        }
+        
+        function updateCatalogDisplay() {
+            const catalogDiv = document.getElementById('objectCatalog');
+            
+            if (objectCatalog.length === 0) {
+                catalogDiv.innerHTML = '<p>No objects in catalog yet. Add some!</p>';
+                return;
+            }
+            
+            catalogDiv.innerHTML = '';
+            objectCatalog.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'catalog-item';
+                itemDiv.innerHTML = `
+                    <div class="catalog-color" style="background-color:${item.color}"></div>
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small>${item.shape} (${item.color})</small>
+                    </div>
+                `;
+                
+                itemDiv.addEventListener('click', () => {
+                    selectedCatalogItem = item;
+                    currentShape = item.shape;
+                    
+                    // Update active buttons
+                    document.querySelectorAll('#controls button').forEach(btn => {
+                        if (btn.id.endsWith('Btn') && btn !== addCatalogBtn && btn !== saveBtn && btn !== clearBtn) {
+                            btn.classList.remove('active');
+                        }
+                    });
+                    document.getElementById(`${item.shape}Btn`).classList.add('active');
+                    
+                    // Highlight selected catalog item
+                    document.querySelectorAll('.catalog-item').forEach(el => {
+                        el.style.background = '#f9f9f9';
+                    });
+                    itemDiv.style.background = '#e3f2fd';
+                    
+                    updateStatus(`Selected: ${item.name}`);
+                });
+                
+                catalogDiv.appendChild(itemDiv);
+            });
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+    </script>
+</body>
+</html>
