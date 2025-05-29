@@ -1,144 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mall Blueprint Tool</title>
+    <title>Simple Mall Blueprint</title>
     <style>
-        body { margin:0; overflow:hidden; font-family:Arial; }
-        canvas { display:block; background:#fff; }
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; background: white; cursor: crosshair; }
         #controls {
-            position:absolute; top:10px; left:10px; 
-            background:rgba(255,255,255,0.9); padding:10px; border-radius:5px;
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(255,255,255,0.8); padding: 10px;
+            border-radius: 5px; border: 1px solid #ccc;
         }
-        button { margin:2px; padding:5px 8px; border:1px solid #ccc; background:#f8f8f8; }
-        button.active { background:#4CAF50; color:white; }
-        #status { position:absolute; bottom:5px; left:5px; background:rgba(255,255,255,0.7); padding:3px 6px; }
+        button { padding: 5px 10px; margin: 2px; }
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
+    <canvas id="blueprint"></canvas>
     <div id="controls">
-        <button id="rectBtn" class="active">Rectangle</button>
-        <button id="lineBtn">Wall</button>
-        <button id="circleBtn">Circle</button>
-        <button id="polyBtn">Custom Shape</button>
-        <div>
-            <label>Grid: <input type="number" id="gridSize" min="10" value="100" style="width:50px;"> cm</label>
-        </div>
-        <div>
-            <label>Zoom: <input type="range" id="zoom" min="10" max="200" value="100"></label>
-        </div>
-        <button id="saveBtn">Save</button>
+        <button id="rectBtn">Rectangle</button>
         <button id="clearBtn">Clear</button>
+        <button id="saveBtn">Save</button>
     </div>
-    <div id="status">Ready</div>
 
     <script>
-        // Canvas setup
-        const canvas = document.getElementById('canvas');
+        // Simple Blueprint Tool
+        const canvas = document.getElementById('blueprint');
         const ctx = canvas.getContext('2d');
-        let scale = 1; // pixels per cm
-        let offsetX = 0, offsetY = 0;
         let isDrawing = false;
-        let currentShape = 'rectangle';
-        let shapes = [];
-        let tempShape = null;
-        let gridSize = 100; // cm
-        let zoom = 1;
-        
-        // Current polygon points (for custom shape)
-        let polygonPoints = [];
-        let isDrawingPolygon = false;
+        let startX, startY;
+        let rectangles = [];
+        let currentColor = '#3498db';
 
-        // Initialize
-        function init() {
-            resizeCanvas();
-            setupEventListeners();
-            draw();
-        }
-
-        // Handle window resize
+        // Set canvas size
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            draw();
+            drawAll();
         }
 
-        // Convert world coordinates to screen coordinates
-        function worldToScreen(x, y) {
-            return {
-                x: x * scale * zoom + offsetX,
-                y: y * scale * zoom + offsetY
-            };
-        }
-
-        // Convert screen coordinates to world coordinates
-        function screenToWorld(x, y) {
-            return {
-                x: (x - offsetX) / (scale * zoom),
-                y: (y - offsetY) / (scale * zoom)
-            };
-        }
-
-        // Snap to grid
-        function snap(x) {
-            return Math.round(x / gridSize) * gridSize;
-        }
-
-        // Main draw function
-        function draw() {
+        // Draw all rectangles
+        function drawAll() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Draw grid
-            drawGrid();
+            drawGrid(50); // 50px grid
             
-            // Draw all shapes
-            shapes.forEach(shape => {
-                drawShape(shape);
+            // Draw all rectangles
+            rectangles.forEach(rect => {
+                drawRectangle(rect);
             });
-            
-            // Draw temporary shape (while drawing)
-            if (tempShape) {
-                drawShape(tempShape);
-            }
-            
-            // Draw polygon points
-            if (polygonPoints.length > 0) {
-                ctx.fillStyle = 'rgba(255,0,0,0.5)';
-                polygonPoints.forEach(point => {
-                    const screen = worldToScreen(point.x, point.y);
-                    ctx.beginPath();
-                    ctx.arc(screen.x, screen.y, 5, 0, Math.PI*2);
-                    ctx.fill();
-                });
-                
-                if (polygonPoints.length > 1) {
-                    ctx.strokeStyle = 'rgba(255,0,0,0.5)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    const first = worldToScreen(polygonPoints[0].x, polygonPoints[0].y);
-                    ctx.moveTo(first.x, first.y);
-                    
-                    for (let i = 1; i < polygonPoints.length; i++) {
-                        const screen = worldToScreen(polygonPoints[i].x, polygonPoints[i].y);
-                        ctx.lineTo(screen.x, screen.y);
-                    }
-                    
-                    ctx.stroke();
-                }
-            }
+        }
+
+        // Draw a single rectangle
+        function drawRectangle(rect) {
+            ctx.fillStyle = rect.color + '80'; // 80 = 50% opacity
+            ctx.strokeStyle = rect.color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(rect.x, rect.y, rect.width, rect.height);
+            ctx.fill();
+            ctx.stroke();
         }
 
         // Draw grid
-        function drawGrid() {
-            const gridSpacing = gridSize * scale * zoom;
-            const startX = offsetX % gridSpacing;
-            const startY = offsetY % gridSpacing;
-            
+        function drawGrid(size) {
             ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 1;
             
             // Vertical lines
-            for (let x = startX; x < canvas.width; x += gridSpacing) {
+            for (let x = 0; x < canvas.width; x += size) {
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, canvas.height);
@@ -146,7 +75,7 @@
             }
             
             // Horizontal lines
-            for (let y = startY; y < canvas.height; y += gridSpacing) {
+            for (let y = 0; y < canvas.height; y += size) {
                 ctx.beginPath();
                 ctx.moveTo(0, y);
                 ctx.lineTo(canvas.width, y);
@@ -154,283 +83,96 @@
             }
         }
 
-        // Draw a shape
-        function drawShape(shape) {
-            const start = worldToScreen(shape.x1, shape.y1);
-            const end = worldToScreen(shape.x2, shape.y2);
+        // Event listeners
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
             
-            ctx.strokeStyle = shape.color || '#3498db';
-            ctx.fillStyle = shape.color ? shape.color + '80' : '#3498db80';
-            ctx.lineWidth = shape.lineWidth || 2;
+            // Clear and redraw everything
+            drawAll();
             
-            switch(shape.type) {
-                case 'rectangle':
-                    ctx.beginPath();
-                    ctx.rect(start.x, start.y, end.x - start.x, end.y - start.y);
-                    ctx.fill();
-                    ctx.stroke();
-                    break;
-                    
-                case 'line':
-                    ctx.beginPath();
-                    ctx.moveTo(start.x, start.y);
-                    ctx.lineTo(end.x, end.y);
-                    ctx.stroke();
-                    break;
-                    
-                case 'circle':
-                    const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-                    ctx.beginPath();
-                    ctx.arc(start.x, start.y, radius, 0, Math.PI*2);
-                    ctx.fill();
-                    ctx.stroke();
-                    break;
-                    
-                case 'polygon':
-                    if (shape.points.length < 2) return;
-                    ctx.beginPath();
-                    const first = worldToScreen(shape.points[0].x, shape.points[0].y);
-                    ctx.moveTo(first.x, first.y);
-                    
-                    for (let i = 1; i < shape.points.length; i++) {
-                        const p = worldToScreen(shape.points[i].x, shape.points[i].y);
-                        ctx.lineTo(p.x, p.y);
-                    }
-                    
-                    if (shape.points.length > 2) {
-                        ctx.closePath();
-                        ctx.fill();
-                    }
-                    ctx.stroke();
-                    break;
+            // Draw current rectangle
+            const width = e.clientX - startX;
+            const height = e.clientY - startY;
+            
+            ctx.fillStyle = currentColor + '40';
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(startX, startY, width, height);
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            const width = e.clientX - startX;
+            const height = e.clientY - startY;
+            
+            // Only save if significant size
+            if (Math.abs(width) > 10 && Math.abs(height) > 10) {
+                rectangles.push({
+                    x: startX,
+                    y: startY,
+                    width: width,
+                    height: height,
+                    color: currentColor
+                });
             }
-        }
+            
+            drawAll();
+        });
 
-        // Event listeners setup
-        function setupEventListeners() {
-            // Button controls
-            document.getElementById('rectBtn').addEventListener('click', () => {
-                currentShape = 'rectangle';
-                setActiveButton('rectBtn');
-                resetPolygon();
-            });
-            
-            document.getElementById('lineBtn').addEventListener('click', () => {
-                currentShape = 'line';
-                setActiveButton('lineBtn');
-                resetPolygon();
-            });
-            
-            document.getElementById('circleBtn').addEventListener('click', () => {
-                currentShape = 'circle';
-                setActiveButton('circleBtn');
-                resetPolygon();
-            });
-            
-            document.getElementById('polyBtn').addEventListener('click', () => {
-                currentShape = 'polygon';
-                setActiveButton('polyBtn');
-                if (!isDrawingPolygon) {
-                    isDrawingPolygon = true;
-                    updateStatus('Click to add polygon points. Double-click to finish.');
-                }
-            });
-            
-            document.getElementById('gridSize').addEventListener('change', (e) => {
-                gridSize = parseInt(e.target.value);
-                draw();
-            });
-            
-            document.getElementById('zoom').addEventListener('input', (e) => {
-                zoom = parseInt(e.target.value) / 100;
-                draw();
-            });
-            
-            document.getElementById('saveBtn').addEventListener('click', saveBlueprint);
-            document.getElementById('clearBtn').addEventListener('click', clearBlueprint);
-            
-            // Canvas interaction
-            let isDragging = false;
-            let lastX, lastY;
-            
-            canvas.addEventListener('mousedown', (e) => {
-                const world = screenToWorld(e.clientX, e.clientY);
-                
-                if (e.button === 0) { // Left click
-                    if (currentShape === 'polygon' && isDrawingPolygon) {
-                        // Add point to polygon
-                        polygonPoints.push({
-                            x: snap(world.x),
-                            y: snap(world.y)
-                        });
-                        draw();
-                    } else {
-                        // Start drawing regular shape
-                        isDrawing = true;
-                        const snapped = {
-                            x: snap(world.x),
-                            y: snap(world.y)
-                        };
-                        
-                        tempShape = {
-                            type: currentShape,
-                            x1: snapped.x,
-                            y1: snapped.y,
-                            x2: snapped.x,
-                            y2: snapped.y,
-                            color: '#3498db',
-                            lineWidth: 2
-                        };
-                    }
-                } else if (e.button === 1 || e.button === 2) { // Middle/right click - pan
-                    isDragging = true;
-                    lastX = e.clientX;
-                    lastY = e.clientY;
-                    canvas.style.cursor = 'grabbing';
-                }
-            });
-            
-            canvas.addEventListener('mousemove', (e) => {
-                const world = screenToWorld(e.clientX, e.clientY);
-                
-                if (isDrawing && tempShape) {
-                    const snapped = {
-                        x: snap(world.x),
-                        y: snap(world.y)
-                    };
-                    
-                    tempShape.x2 = snapped.x;
-                    tempShape.y2 = snapped.y;
-                    draw();
-                } else if (isDragging) {
-                    const dx = e.clientX - lastX;
-                    const dy = e.clientY - lastY;
-                    offsetX += dx;
-                    offsetY += dy;
-                    lastX = e.clientX;
-                    lastY = e.clientY;
-                    draw();
-                }
-            });
-            
-            canvas.addEventListener('mouseup', (e) => {
-                if (isDrawing && tempShape) {
-                    const world = screenToWorld(e.clientX, e.clientY);
-                    const snapped = {
-                        x: snap(world.x),
-                        y: snap(world.y)
-                    };
-                    
-                    tempShape.x2 = snapped.x;
-                    tempShape.y2 = snapped.y;
-                    
-                    // Only add if not zero size
-                    if (tempShape.x1 !== tempShape.x2 || tempShape.y1 !== tempShape.y2) {
-                        shapes.push({...tempShape});
-                    }
-                    
-                    tempShape = null;
-                    isDrawing = false;
-                    draw();
-                }
-                
-                if (isDragging) {
-                    isDragging = false;
-                    canvas.style.cursor = 'default';
-                }
-            });
-            
-            canvas.addEventListener('dblclick', (e) => {
-                if (currentShape === 'polygon' && polygonPoints.length >= 3) {
-                    // Finish polygon
-                    shapes.push({
-                        type: 'polygon',
-                        points: [...polygonPoints],
-                        color: '#3498db',
-                        lineWidth: 2
-                    });
-                    resetPolygon();
-                    draw();
-                }
-            });
-            
-            // Handle zoom with mouse wheel
-            canvas.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const worldBefore = screenToWorld(e.clientX, e.clientY);
-                
-                // Adjust zoom
-                const zoomInput = document.getElementById('zoom');
-                let newZoom = parseInt(zoomInput.value) - e.deltaY * 0.1;
-                newZoom = Math.max(10, Math.min(200, newZoom));
-                zoomInput.value = newZoom;
-                zoom = newZoom / 100;
-                
-                const worldAfter = screenToWorld(e.clientX, e.clientY);
-                
-                // Adjust offset to zoom at mouse position
-                offsetX += (worldAfter.x - worldBefore.x) * scale * zoom;
-                offsetY += (worldAfter.y - worldBefore.y) * scale * zoom;
-                
-                draw();
-            });
-            
-            window.addEventListener('resize', resizeCanvas);
-        }
-
-        // Helper functions
-        function setActiveButton(id) {
-            document.querySelectorAll('button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById(id).classList.add('active');
-        }
-        
-        function resetPolygon() {
-            polygonPoints = [];
-            isDrawingPolygon = false;
-        }
-        
-        function updateStatus(msg) {
-            document.getElementById('status').textContent = msg;
-        }
-        
-        function saveBlueprint() {
-            const data = {
-                shapes: shapes,
-                scale: scale,
-                zoom: zoom,
-                offsetX: offsetX,
-                offsetY: offsetY,
-                gridSize: gridSize
-            };
-            
-            const json = JSON.stringify(data);
-            const blob = new Blob([json], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'mall-blueprint.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            updateStatus('Blueprint saved');
-        }
-        
-        function clearBlueprint() {
-            if (confirm('Are you sure you want to clear all shapes?')) {
-                shapes = [];
-                resetPolygon();
-                draw();
-                updateStatus('Canvas cleared');
+        // Control buttons
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (confirm('Clear all rectangles?')) {
+                rectangles = [];
+                drawAll();
             }
-        }
+        });
 
-        // Initialize the app
-        init();
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            // Create a temporary canvas for saving
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // White background
+            tempCtx.fillStyle = 'white';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Draw all rectangles
+            rectangles.forEach(rect => {
+                tempCtx.fillStyle = rect.color + '80';
+                tempCtx.strokeStyle = rect.color;
+                tempCtx.lineWidth = 2;
+                tempCtx.beginPath();
+                tempCtx.rect(rect.x, rect.y, rect.width, rect.height);
+                tempCtx.fill();
+                tempCtx.stroke();
+            });
+            
+            // Convert to image
+            const dataURL = tempCanvas.toDataURL('image/png');
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = 'mall-blueprint.png';
+            link.href = dataURL;
+            link.click();
+        });
+
+        // Initialize
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
     </script>
 </body>
 </html>
