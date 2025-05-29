@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Shapes Drawing</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        canvas {
+            display: block;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .shape-btn {
+            margin: 5px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .shape-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .shape-btn.active {
+            background-color: #2E7D32;
+        }
+        
+        #clearBtn {
+            background-color: #f44336;
+        }
+        
+        #clearBtn:hover {
+            background-color: #d32f2f;
+        }
+        
+        .control-group {
+            margin: 10px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="drawingCanvas"></canvas>
+    
+    <div id="controls">
+        <div class="control-group">
+            <h3>Shapes</h3>
+            <button id="rectBtn" class="shape-btn active">Rectangle</button>
+            <button id="circleBtn" class="shape-btn">Circle</button>
+            <button id="triangleBtn" class="shape-btn">Triangle</button>
+            <button id="lineBtn" class="shape-btn">Line</button>
+        </div>
+        
+        <div class="control-group">
+            <label for="colorPicker">Color:</label>
+            <input type="color" id="colorPicker" value="#000000">
+        </div>
+        
+        <div class="control-group">
+            <label for="lineWidth">Line Width:</label>
+            <input type="range" id="lineWidth" min="1" max="20" value="2">
+        </div>
+        
+        <div class="control-group">
+            <button id="clearBtn" class="shape-btn">Clear Canvas</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize canvas and context
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full window size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Drawing state
+        let isDrawing = false;
+        let startX, startY;
+        let currentShape = 'rectangle';
+        let currentColor = '#000000';
+        let currentLineWidth = 2;
+        
+        // Array to store all drawn shapes for redrawing
+        const shapes = [];
+        
+        // Get control elements
+        const rectBtn = document.getElementById('rectBtn');
+        const circleBtn = document.getElementById('circleBtn');
+        const triangleBtn = document.getElementById('triangleBtn');
+        const lineBtn = document.getElementById('lineBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const colorPicker = document.getElementById('colorPicker');
+        const lineWidth = document.getElementById('lineWidth');
+        
+        // Set active button style
+        function setActiveButton(activeBtn) {
+            document.querySelectorAll('.shape-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            activeBtn.classList.add('active');
+        }
+        
+        // Set up event listeners for buttons
+        rectBtn.addEventListener('click', () => {
+            currentShape = 'rectangle';
+            setActiveButton(rectBtn);
+        });
+        circleBtn.addEventListener('click', () => {
+            currentShape = 'circle';
+            setActiveButton(circleBtn);
+        });
+        triangleBtn.addEventListener('click', () => {
+            currentShape = 'triangle';
+            setActiveButton(triangleBtn);
+        });
+        lineBtn.addEventListener('click', () => {
+            currentShape = 'line';
+            setActiveButton(lineBtn);
+        });
+        
+        clearBtn.addEventListener('click', clearCanvas);
+        colorPicker.addEventListener('input', (e) => currentColor = e.target.value);
+        lineWidth.addEventListener('input', (e) => currentLineWidth = e.target.value);
+        
+        // Mouse event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            // Store the initial state for the new shape
+            shapes.push({
+                type: currentShape,
+                startX,
+                startY,
+                endX: startX,
+                endY: startY,
+                color: currentColor,
+                lineWidth: currentLineWidth
+            });
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            // Update the end coordinates of the current shape
+            const currentShapeObj = shapes[shapes.length - 1];
+            currentShapeObj.endX = e.clientX;
+            currentShapeObj.endY = e.clientY;
+            currentShapeObj.color = currentColor;
+            currentShapeObj.lineWidth = currentLineWidth;
+            
+            // Redraw all shapes
+            redrawCanvas();
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        function clearCanvas() {
+            shapes.length = 0;
+            redrawCanvas();
+        }
+        
+        function redrawCanvas() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Redraw all shapes
+            shapes.forEach(shape => {
+                drawShape(
+                    shape.type,
+                    shape.startX,
+                    shape.startY,
+                    shape.endX,
+                    shape.endY,
+                    shape.color,
+                    shape.lineWidth
+                );
+            });
+        }
+        
+        function drawShape(type, x1, y1, x2, y2, color, lineWidth) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = lineWidth;
+            
+            switch(type) {
+                case 'rectangle':
+                    const rectWidth = x2 - x1;
+                    const rectHeight = y2 - y1;
+                    ctx.rect(x1, y1, rectWidth, rectHeight);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                    
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                    ctx.arc(x1, y1, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                    
+                case 'triangle':
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.lineTo(x1 * 2 - x2, y2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                    
+                case 'line':
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                    break;
+            }
+        }
+        
+        // Initialize with rectangle button active
+        setActiveButton(rectBtn);
+    </script>
+</body>
+</html>
