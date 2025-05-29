@@ -1,347 +1,144 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mall Blueprint Tool</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-        }
-        
-        canvas {
-            display: block;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        
+        body { margin:0; overflow:hidden; font-family:Arial; }
+        canvas { display:block; background:#fff; }
         #controls {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            width: 300px;
-            max-height: 90vh;
-            overflow-y: auto;
+            position:absolute; top:10px; left:10px; 
+            background:rgba(255,255,255,0.9); padding:10px; border-radius:5px;
         }
-        
-        .control-section {
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .control-section h3 {
-            margin-top: 0;
-            color: #333;
-        }
-        
-        button {
-            margin: 5px;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 4px;
-            background-color: #4CAF50;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        button.active {
-            background-color: #2E7D32;
-            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-        
-        #clearBtn {
-            background-color: #f44336;
-        }
-        
-        #clearBtn:hover {
-            background-color: #d32f2f;
-        }
-        
-        #saveBtn {
-            background-color: #2196F3;
-        }
-        
-        #saveBtn:hover {
-            background-color: #0b7dda;
-        }
-        
-        label {
-            display: block;
-            margin: 8px 0 4px;
-            font-weight: bold;
-            color: #555;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        
-        #objectCatalog {
-            margin-top: 10px;
-        }
-        
-        .catalog-item {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-            margin: 5px 0;
-            background: #f9f9f9;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        .catalog-item:hover {
-            background: #eee;
-        }
-        
-        .catalog-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 10px;
-            border: 1px solid #ccc;
-        }
-        
-        #gridControls {
-            display: flex;
-            align-items: center;
-        }
-        
-        #gridControls input {
-            width: 60px;
-            margin-right: 10px;
-        }
-        
-        #status {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #666;
-        }
+        button { margin:2px; padding:5px 8px; border:1px solid #ccc; background:#f8f8f8; }
+        button.active { background:#4CAF50; color:white; }
+        #status { position:absolute; bottom:5px; left:5px; background:rgba(255,255,255,0.7); padding:3px 6px; }
     </style>
 </head>
 <body>
-    <canvas id="blueprintCanvas"></canvas>
-    
+    <canvas id="canvas"></canvas>
     <div id="controls">
-        <div class="control-section">
-            <h3>Blueprint Settings</h3>
-            <div id="gridControls">
-                <label>Grid Size (cm):</label>
-                <input type="number" id="gridSize" min="10" max="500" value="100">
-                <label>Snap:</label>
-                <input type="checkbox" id="snapToGrid" checked>
-            </div>
-            <label>Scale (px/meter):</label>
-            <input type="number" id="scaleFactor" min="1" max="100" value="20">
+        <button id="rectBtn" class="active">Rectangle</button>
+        <button id="lineBtn">Wall</button>
+        <button id="circleBtn">Circle</button>
+        <button id="polyBtn">Custom Shape</button>
+        <div>
+            <label>Grid: <input type="number" id="gridSize" min="10" value="100" style="width:50px;"> cm</label>
         </div>
-        
-        <div class="control-section">
-            <h3>Drawing Tools</h3>
-            <div>
-                <button id="rectBtn" class="active">Rectangle</button>
-                <button id="circleBtn">Circle</button>
-                <button id="lineBtn">Wall</button>
-            </div>
-            <label for="lineWidth">Line Width:</label>
-            <input type="range" id="lineWidth" min="1" max="10" value="2">
+        <div>
+            <label>Zoom: <input type="range" id="zoom" min="10" max="200" value="100"></label>
         </div>
-        
-        <div class="control-section">
-            <h3>Object Catalog</h3>
-            <label for="objectName">Object Name:</label>
-            <input type="text" id="objectName" placeholder="E.g., Round Food Court Table">
-            <label for="objectColor">Color:</label>
-            <input type="color" id="objectColor" value="#3498db">
-            <button id="addCatalogBtn">Add to Catalog</button>
-            
-            <div id="objectCatalog">
-                <p>No objects in catalog yet. Add some!</p>
-            </div>
-        </div>
-        
-        <div class="control-section">
-            <button id="saveBtn">Save Blueprint</button>
-            <button id="clearBtn">Clear Canvas</button>
-        </div>
+        <button id="saveBtn">Save</button>
+        <button id="clearBtn">Clear</button>
     </div>
-    
     <div id="status">Ready</div>
 
     <script>
-        // Initialize canvas and context
-        const canvas = document.getElementById('blueprintCanvas');
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
-        // Blueprint settings
-        let gridSize = 100; // in cm
-        let scaleFactor = 20; // pixels per meter
-        let snapToGrid = true;
-        let currentShape = 'rectangle';
-        let currentLineWidth = 2;
+        let scale = 1; // pixels per cm
+        let offsetX = 0, offsetY = 0;
         let isDrawing = false;
-        let startX, startY;
+        let currentShape = 'rectangle';
+        let shapes = [];
+        let tempShape = null;
+        let gridSize = 100; // cm
+        let zoom = 1;
         
-        // Object catalog
-        let objectCatalog = [];
-        let selectedCatalogItem = null;
-        
-        // Store all blueprint elements
-        let blueprintElements = [];
-        
-        // Set canvas to full window size
+        // Current polygon points (for custom shape)
+        let polygonPoints = [];
+        let isDrawingPolygon = false;
+
+        // Initialize
+        function init() {
+            resizeCanvas();
+            setupEventListeners();
+            draw();
+        }
+
+        // Handle window resize
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            drawGrid();
-            redrawBlueprint();
+            draw();
         }
-        
-        // Initialize
-        window.addEventListener('load', () => {
-            resizeCanvas();
-            setupEventListeners();
-            updateStatus(`Ready | Scale: ${scaleFactor}px/m | Grid: ${gridSize}cm`);
-        });
-        
-        window.addEventListener('resize', resizeCanvas);
-        
-        function setupEventListeners() {
-            // Get control elements
-            const rectBtn = document.getElementById('rectBtn');
-            const circleBtn = document.getElementById('circleBtn');
-            const lineBtn = document.getElementById('lineBtn');
-            const clearBtn = document.getElementById('clearBtn');
-            const saveBtn = document.getElementById('saveBtn');
-            const lineWidth = document.getElementById('lineWidth');
-            const gridSizeInput = document.getElementById('gridSize');
-            const scaleFactorInput = document.getElementById('scaleFactor');
-            const snapCheckbox = document.getElementById('snapToGrid');
-            const addCatalogBtn = document.getElementById('addCatalogBtn');
-            const objectName = document.getElementById('objectName');
-            const objectColor = document.getElementById('objectColor');
+
+        // Convert world coordinates to screen coordinates
+        function worldToScreen(x, y) {
+            return {
+                x: x * scale * zoom + offsetX,
+                y: y * scale * zoom + offsetY
+            };
+        }
+
+        // Convert screen coordinates to world coordinates
+        function screenToWorld(x, y) {
+            return {
+                x: (x - offsetX) / (scale * zoom),
+                y: (y - offsetY) / (scale * zoom)
+            };
+        }
+
+        // Snap to grid
+        function snap(x) {
+            return Math.round(x / gridSize) * gridSize;
+        }
+
+        // Main draw function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Set active button style
-            function setActiveButton(activeBtn) {
-                document.querySelectorAll('#controls button').forEach(btn => {
-                    if (btn.id.endsWith('Btn') && btn !== addCatalogBtn && btn !== saveBtn && btn !== clearBtn) {
-                        btn.classList.remove('active');
-                    }
-                });
-                activeBtn.classList.add('active');
+            // Draw grid
+            drawGrid();
+            
+            // Draw all shapes
+            shapes.forEach(shape => {
+                drawShape(shape);
+            });
+            
+            // Draw temporary shape (while drawing)
+            if (tempShape) {
+                drawShape(tempShape);
             }
             
-            // Drawing tools
-            rectBtn.addEventListener('click', () => {
-                currentShape = 'rectangle';
-                setActiveButton(rectBtn);
-            });
-            circleBtn.addEventListener('click', () => {
-                currentShape = 'circle';
-                setActiveButton(circleBtn);
-            });
-            lineBtn.addEventListener('click', () => {
-                currentShape = 'line';
-                setActiveButton(lineBtn);
-            });
-            
-            // Settings
-            lineWidth.addEventListener('input', (e) => currentLineWidth = e.target.value);
-            gridSizeInput.addEventListener('input', (e) => {
-                gridSize = parseInt(e.target.value);
-                drawGrid();
-                redrawBlueprint();
-                updateStatus(`Grid size set to ${gridSize}cm`);
-            });
-            scaleFactorInput.addEventListener('input', (e) => {
-                scaleFactor = parseInt(e.target.value);
-                drawGrid();
-                redrawBlueprint();
-                updateStatus(`Scale set to ${scaleFactor}px/meter`);
-            });
-            snapCheckbox.addEventListener('change', (e) => {
-                snapToGrid = e.target.checked;
-                updateStatus(snapToGrid ? 'Grid snapping enabled' : 'Grid snapping disabled');
-            });
-            
-            // Object catalog
-            addCatalogBtn.addEventListener('click', () => {
-                const name = objectName.value.trim();
-                const color = objectColor.value;
+            // Draw polygon points
+            if (polygonPoints.length > 0) {
+                ctx.fillStyle = 'rgba(255,0,0,0.5)';
+                polygonPoints.forEach(point => {
+                    const screen = worldToScreen(point.x, point.y);
+                    ctx.beginPath();
+                    ctx.arc(screen.x, screen.y, 5, 0, Math.PI*2);
+                    ctx.fill();
+                });
                 
-                if (name === '') {
-                    alert('Please enter an object name');
-                    return;
+                if (polygonPoints.length > 1) {
+                    ctx.strokeStyle = 'rgba(255,0,0,0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    const first = worldToScreen(polygonPoints[0].x, polygonPoints[0].y);
+                    ctx.moveTo(first.x, first.y);
+                    
+                    for (let i = 1; i < polygonPoints.length; i++) {
+                        const screen = worldToScreen(polygonPoints[i].x, polygonPoints[i].y);
+                        ctx.lineTo(screen.x, screen.y);
+                    }
+                    
+                    ctx.stroke();
                 }
-                
-                // Add to catalog
-                const newItem = { name, color, shape: currentShape };
-                objectCatalog.push(newItem);
-                updateCatalogDisplay();
-                
-                // Clear input
-                objectName.value = '';
-                
-                updateStatus(`Added "${name}" to catalog`);
-            });
-            
-            // Actions
-            clearBtn.addEventListener('click', clearBlueprint);
-            saveBtn.addEventListener('click', saveBlueprint);
-            
-            // Mouse events
-            canvas.addEventListener('mousedown', startDrawing);
-            canvas.addEventListener('mousemove', draw);
-            canvas.addEventListener('mouseup', stopDrawing);
-            canvas.addEventListener('mouseout', stopDrawing);
+            }
         }
-        
-        // Convert cm to pixels based on scale
-        function cmToPixels(cm) {
-            return (cm / 100) * scaleFactor; // Convert cm to meters, then scale
-        }
-        
-        // Snap coordinate to grid
-        function snapCoordinate(coord) {
-            if (!snapToGrid) return coord;
-            const gridPixels = cmToPixels(gridSize);
-            return Math.round(coord / gridPixels) * gridPixels;
-        }
-        
+
         // Draw grid
         function drawGrid() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const gridSpacing = gridSize * scale * zoom;
+            const startX = offsetX % gridSpacing;
+            const startY = offsetY % gridSpacing;
+            
             ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 1;
             
-            const gridPixels = cmToPixels(gridSize);
-            const gridOffsetX = 0;
-            const gridOffsetY = 0;
-            
             // Vertical lines
-            for (let x = gridOffsetX; x < canvas.width; x += gridPixels) {
+            for (let x = startX; x < canvas.width; x += gridSpacing) {
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, canvas.height);
@@ -349,273 +146,260 @@
             }
             
             // Horizontal lines
-            for (let y = gridOffsetY; y < canvas.height; y += gridPixels) {
+            for (let y = startY; y < canvas.height; y += gridSpacing) {
                 ctx.beginPath();
                 ctx.moveTo(0, y);
                 ctx.lineTo(canvas.width, y);
                 ctx.stroke();
             }
         }
-        
-        // Drawing functions
-        function startDrawing(e) {
-            if (!selectedCatalogItem && objectCatalog.length > 0) {
-                updateStatus('Please select an item from the catalog first');
-                return;
-            }
+
+        // Draw a shape
+        function drawShape(shape) {
+            const start = worldToScreen(shape.x1, shape.y1);
+            const end = worldToScreen(shape.x2, shape.y2);
             
-            isDrawing = true;
-            startX = snapCoordinate(e.clientX);
-            startY = snapCoordinate(e.clientY);
+            ctx.strokeStyle = shape.color || '#3498db';
+            ctx.fillStyle = shape.color ? shape.color + '80' : '#3498db80';
+            ctx.lineWidth = shape.lineWidth || 2;
             
-            // For immediate feedback
-            ctx.globalAlpha = 0.5;
-            drawShape(currentShape, startX, startY, startX, startY, 
-                     selectedCatalogItem ? selectedCatalogItem.color : '#000000', 
-                     currentLineWidth);
-            ctx.globalAlpha = 1.0;
-        }
-        
-        function draw(e) {
-            if (!isDrawing) return;
-            
-            const endX = snapCoordinate(e.clientX);
-            const endY = snapCoordinate(e.clientY);
-            
-            // Clear and redraw
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawGrid();
-            redrawBlueprint();
-            
-            // Draw preview
-            ctx.globalAlpha = 0.5;
-            drawShape(currentShape, startX, startY, endX, endY, 
-                     selectedCatalogItem ? selectedCatalogItem.color : '#000000', 
-                     currentLineWidth);
-            ctx.globalAlpha = 1.0;
-            
-            // Show dimensions in status
-            const widthMeters = Math.abs(endX - startX) / scaleFactor;
-            const heightMeters = Math.abs(endY - startY) / scaleFactor;
-            updateStatus(`Drawing: ${widthMeters.toFixed(2)}m × ${heightMeters.toFixed(2)}m`);
-        }
-        
-        function stopDrawing(e) {
-            if (!isDrawing) return;
-            isDrawing = false;
-            
-            const endX = snapCoordinate(e.clientX);
-            const endY = snapCoordinate(e.clientY);
-            
-            // Don't add zero-size elements
-            if (startX === endX && startY === endY) {
-                redrawBlueprint();
-                return;
-            }
-            
-            // Add to blueprint elements
-            if (selectedCatalogItem) {
-                blueprintElements.push({
-                    type: currentShape,
-                    x1: startX,
-                    y1: startY,
-                    x2: endX,
-                    y2: endY,
-                    color: selectedCatalogItem.color,
-                    lineWidth: currentLineWidth,
-                    name: selectedCatalogItem.name,
-                    timestamp: new Date().toISOString()
-                });
-                
-                updateStatus(`Added ${selectedCatalogItem.name}`);
-            }
-            
-            redrawBlueprint();
-        }
-        
-        function drawShape(type, x1, y1, x2, y2, color, lineWidth) {
-            ctx.beginPath();
-            ctx.strokeStyle = color;
-            ctx.fillStyle = color;
-            ctx.lineWidth = lineWidth;
-            
-            switch(type) {
+            switch(shape.type) {
                 case 'rectangle':
-                    ctx.rect(x1, y1, x2 - x1, y2 - y1);
+                    ctx.beginPath();
+                    ctx.rect(start.x, start.y, end.x - start.x, end.y - start.y);
                     ctx.fill();
                     ctx.stroke();
-                    
-                    // Draw dimensions
-                    if (x1 !== x2 && y1 !== y2) {
-                        drawDimensions(x1, y1, x2, y2);
-                    }
-                    break;
-                    
-                case 'circle':
-                    const radius = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-                    ctx.arc(x1, y1, radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                    
-                    // Draw diameter
-                    if (radius > 0) {
-                        drawDimensions(x1 - radius, y1, x1 + radius, y1);
-                    }
                     break;
                     
                 case 'line':
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
                     ctx.stroke();
+                    break;
                     
-                    // Draw length
-                    if (x1 !== x2 || y1 !== y2) {
-                        drawDimensions(x1, y1, x2, y2);
+                case 'circle':
+                    const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+                    ctx.beginPath();
+                    ctx.arc(start.x, start.y, radius, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    break;
+                    
+                case 'polygon':
+                    if (shape.points.length < 2) return;
+                    ctx.beginPath();
+                    const first = worldToScreen(shape.points[0].x, shape.points[0].y);
+                    ctx.moveTo(first.x, first.y);
+                    
+                    for (let i = 1; i < shape.points.length; i++) {
+                        const p = worldToScreen(shape.points[i].x, shape.points[i].y);
+                        ctx.lineTo(p.x, p.y);
                     }
+                    
+                    if (shape.points.length > 2) {
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.stroke();
                     break;
             }
         }
-        
-        function drawDimensions(x1, y1, x2, y2) {
-            const centerX = (x1 + x2) / 2;
-            const centerY = (y1 + y2) / 2;
-            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-            const meters = distance / scaleFactor;
+
+        // Event listeners setup
+        function setupEventListeners() {
+            // Button controls
+            document.getElementById('rectBtn').addEventListener('click', () => {
+                currentShape = 'rectangle';
+                setActiveButton('rectBtn');
+                resetPolygon();
+            });
             
-            ctx.save();
-            ctx.fillStyle = '#000';
-            ctx.font = '10px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${meters.toFixed(2)}m`, centerX, centerY - 5);
-            ctx.restore();
-        }
-        
-        function redrawBlueprint() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawGrid();
+            document.getElementById('lineBtn').addEventListener('click', () => {
+                currentShape = 'line';
+                setActiveButton('lineBtn');
+                resetPolygon();
+            });
             
-            blueprintElements.forEach(element => {
-                drawShape(
-                    element.type,
-                    element.x1,
-                    element.y1,
-                    element.x2,
-                    element.y2,
-                    element.color,
-                    element.lineWidth
-                );
-                
-                // Draw label if space allows
-                if (element.name) {
-                    const width = Math.abs(element.x2 - element.x1);
-                    const height = Math.abs(element.y2 - element.y1);
-                    const minDimension = Math.min(width, height);
-                    
-                    if (minDimension > 50) { // Only draw label if there's enough space
-                        const centerX = (element.x1 + element.x2) / 2;
-                        const centerY = (element.y1 + element.y2) / 2;
-                        
-                        ctx.save();
-                        ctx.fillStyle = '#000';
-                        ctx.font = 'bold 12px Arial';
-                        ctx.textAlign = 'center';
-                        
-                        // For circles, position text above
-                        if (element.type === 'circle') {
-                            const radius = Math.sqrt(Math.pow(element.x2 - element.x1, 2) + 
-                                          Math.pow(element.y2 - element.y1, 2));
-                            ctx.fillText(element.name, element.x1, element.y1 - radius - 10);
-                        } else {
-                            ctx.fillText(element.name, centerX, centerY);
-                        }
-                        
-                        ctx.restore();
-                    }
+            document.getElementById('circleBtn').addEventListener('click', () => {
+                currentShape = 'circle';
+                setActiveButton('circleBtn');
+                resetPolygon();
+            });
+            
+            document.getElementById('polyBtn').addEventListener('click', () => {
+                currentShape = 'polygon';
+                setActiveButton('polyBtn');
+                if (!isDrawingPolygon) {
+                    isDrawingPolygon = true;
+                    updateStatus('Click to add polygon points. Double-click to finish.');
                 }
             });
+            
+            document.getElementById('gridSize').addEventListener('change', (e) => {
+                gridSize = parseInt(e.target.value);
+                draw();
+            });
+            
+            document.getElementById('zoom').addEventListener('input', (e) => {
+                zoom = parseInt(e.target.value) / 100;
+                draw();
+            });
+            
+            document.getElementById('saveBtn').addEventListener('click', saveBlueprint);
+            document.getElementById('clearBtn').addEventListener('click', clearBlueprint);
+            
+            // Canvas interaction
+            let isDragging = false;
+            let lastX, lastY;
+            
+            canvas.addEventListener('mousedown', (e) => {
+                const world = screenToWorld(e.clientX, e.clientY);
+                
+                if (e.button === 0) { // Left click
+                    if (currentShape === 'polygon' && isDrawingPolygon) {
+                        // Add point to polygon
+                        polygonPoints.push({
+                            x: snap(world.x),
+                            y: snap(world.y)
+                        });
+                        draw();
+                    } else {
+                        // Start drawing regular shape
+                        isDrawing = true;
+                        const snapped = {
+                            x: snap(world.x),
+                            y: snap(world.y)
+                        };
+                        
+                        tempShape = {
+                            type: currentShape,
+                            x1: snapped.x,
+                            y1: snapped.y,
+                            x2: snapped.x,
+                            y2: snapped.y,
+                            color: '#3498db',
+                            lineWidth: 2
+                        };
+                    }
+                } else if (e.button === 1 || e.button === 2) { // Middle/right click - pan
+                    isDragging = true;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    canvas.style.cursor = 'grabbing';
+                }
+            });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const world = screenToWorld(e.clientX, e.clientY);
+                
+                if (isDrawing && tempShape) {
+                    const snapped = {
+                        x: snap(world.x),
+                        y: snap(world.y)
+                    };
+                    
+                    tempShape.x2 = snapped.x;
+                    tempShape.y2 = snapped.y;
+                    draw();
+                } else if (isDragging) {
+                    const dx = e.clientX - lastX;
+                    const dy = e.clientY - lastY;
+                    offsetX += dx;
+                    offsetY += dy;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    draw();
+                }
+            });
+            
+            canvas.addEventListener('mouseup', (e) => {
+                if (isDrawing && tempShape) {
+                    const world = screenToWorld(e.clientX, e.clientY);
+                    const snapped = {
+                        x: snap(world.x),
+                        y: snap(world.y)
+                    };
+                    
+                    tempShape.x2 = snapped.x;
+                    tempShape.y2 = snapped.y;
+                    
+                    // Only add if not zero size
+                    if (tempShape.x1 !== tempShape.x2 || tempShape.y1 !== tempShape.y2) {
+                        shapes.push({...tempShape});
+                    }
+                    
+                    tempShape = null;
+                    isDrawing = false;
+                    draw();
+                }
+                
+                if (isDragging) {
+                    isDragging = false;
+                    canvas.style.cursor = 'default';
+                }
+            });
+            
+            canvas.addEventListener('dblclick', (e) => {
+                if (currentShape === 'polygon' && polygonPoints.length >= 3) {
+                    // Finish polygon
+                    shapes.push({
+                        type: 'polygon',
+                        points: [...polygonPoints],
+                        color: '#3498db',
+                        lineWidth: 2
+                    });
+                    resetPolygon();
+                    draw();
+                }
+            });
+            
+            // Handle zoom with mouse wheel
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const worldBefore = screenToWorld(e.clientX, e.clientY);
+                
+                // Adjust zoom
+                const zoomInput = document.getElementById('zoom');
+                let newZoom = parseInt(zoomInput.value) - e.deltaY * 0.1;
+                newZoom = Math.max(10, Math.min(200, newZoom));
+                zoomInput.value = newZoom;
+                zoom = newZoom / 100;
+                
+                const worldAfter = screenToWorld(e.clientX, e.clientY);
+                
+                // Adjust offset to zoom at mouse position
+                offsetX += (worldAfter.x - worldBefore.x) * scale * zoom;
+                offsetY += (worldAfter.y - worldBefore.y) * scale * zoom;
+                
+                draw();
+            });
+            
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        // Helper functions
+        function setActiveButton(id) {
+            document.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
         }
         
-        function clearBlueprint() {
-            if (confirm('Are you sure you want to clear the entire blueprint?')) {
-                blueprintElements = [];
-                redrawBlueprint();
-                updateStatus('Blueprint cleared');
-            }
+        function resetPolygon() {
+            polygonPoints = [];
+            isDrawingPolygon = false;
+        }
+        
+        function updateStatus(msg) {
+            document.getElementById('status').textContent = msg;
         }
         
         function saveBlueprint() {
-            const blueprintData = {
-                metadata: {
-                    created: new Date().toISOString(),
-                    scale: scaleFactor,
-                    gridSize: gridSize,
-                    units: 'meters'
-                },
-                elements: blueprintElements,
-                catalog: objectCatalog
-            };
-            
-            const dataStr = JSON.stringify(blueprintData, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportName = 'mall_blueprint_' + new Date().toISOString().slice(0, 10) + '.json';
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportName);
-            linkElement.click();
-            
-            updateStatus(`Blueprint saved as ${exportName}`);
-        }
-        
-        function updateCatalogDisplay() {
-            const catalogDiv = document.getElementById('objectCatalog');
-            
-            if (objectCatalog.length === 0) {
-                catalogDiv.innerHTML = '<p>No objects in catalog yet. Add some!</p>';
-                return;
-            }
-            
-            catalogDiv.innerHTML = '';
-            objectCatalog.forEach((item, index) => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'catalog-item';
-                itemDiv.innerHTML = `
-                    <div class="catalog-color" style="background-color:${item.color}"></div>
-                    <div>
-                        <strong>${item.name}</strong><br>
-                        <small>${item.shape} (${item.color})</small>
-                    </div>
-                `;
-                
-                itemDiv.addEventListener('click', () => {
-                    selectedCatalogItem = item;
-                    currentShape = item.shape;
-                    
-                    // Update active buttons
-                    document.querySelectorAll('#controls button').forEach(btn => {
-                        if (btn.id.endsWith('Btn') && btn !== addCatalogBtn && btn !== saveBtn && btn !== clearBtn) {
-                            btn.classList.remove('active');
-                        }
-                    });
-                    document.getElementById(`${item.shape}Btn`).classList.add('active');
-                    
-                    // Highlight selected catalog item
-                    document.querySelectorAll('.catalog-item').forEach(el => {
-                        el.style.background = '#f9f9f9';
-                    });
-                    itemDiv.style.background = '#e3f2fd';
-                    
-                    updateStatus(`Selected: ${item.name}`);
-                });
-                
-                catalogDiv.appendChild(itemDiv);
-            });
-        }
-        
-        function updateStatus(message) {
-            document.getElementById('status').textContent = message;
-        }
-    </script>
-</body>
-</html>
+            const data = {
+                shapes: shapes,
+                scale: scale,
+                zoom: zoom,
+                offsetX: offsetX,
+                offsetY: offsetY,
+                gridSize
